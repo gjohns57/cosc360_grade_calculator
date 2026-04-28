@@ -1,20 +1,24 @@
 from bs4 import BeautifulSoup
 import pandas as pd
 import os
-import regex
+import re
+from datetime import date
 
 
 def lab_grade(grades: pd.DataFrame):
     df = grades[(grades["Context"] == "Programming Assignments") & (grades["Score"] != "-")]
+    quiz = grades[(grades["Context"] == "Lab Quizzes") & (grades["Score"] != "-")]
 
     current = pd.to_numeric(df["Score"]).sum()
+    quiz_score = pd.to_numeric(quiz["Score"]).sum() / 10
     total = pd.to_numeric(df["Out Of"]).sum()
-    print("Programming Assignments:", current, "/", total, "=", current / total)
+    quiz_total = pd.to_numeric(quiz["Out Of"]).sum() / 10
+    print("Programming Assignments:", current + quiz_score, "/", total + quiz_total, "=", (current + quiz_score) / (total + quiz_total))
 
     return current / total
 
 def exam_grade(grades: pd.DataFrame):
-    exclude = {"Midterm Exam 1"}
+    exclude = {"Midterm Exam 1", "Midterm Exam 2", "Final Exam", "Final Exam Required"}
     df = grades[(grades["Context"] == "Exams") & (grades["Score"] != "-") & ~grades["Name"].isin(exclude)]
     current = pd.to_numeric(df["Score"]).sum()
     total = pd.to_numeric(df["Out Of"]).sum()
@@ -23,7 +27,11 @@ def exam_grade(grades: pd.DataFrame):
     return current / total
 
 def attendance_penalty(grades: pd.DataFrame):
-    pass
+    missed =  grades[(grades["Context"] == "Attendance Quizzes")]
+    missed = missed[(pd.to_datetime(missed["Name"]) < date.today().strftime("%Y-%m-%d")) & (missed["Score"] == "-")]
+    print("Attendance:", len(missed), "abcences", -0.05 * min(0, 5 - len(missed)), "penalty")
+
+    return 0.05 * min(0, 5 - len(missed))
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -70,7 +78,7 @@ def parse_html() -> pd.DataFrame:
         out_of_element = score_element.find_next_sibling()
         if out_of_element == None: continue
 
-        score_match = regex.search("-|[0-9]+", score_element.text)
+        score_match = re.search("-|[0-9]+", score_element.text)
         if score_match == None: continue
 
         new_row = [
@@ -96,7 +104,8 @@ if __name__ == "__main__":
 
     lab_score = lab_grade(grades)
     exam_score = exam_grade(grades)
-    total = lab_score * 0.4 + exam_score * 0.6
+    attendance = attendance_penalty(grades)
+    total = lab_score * 0.4 + exam_score * 0.6 + attendance
 
     print("Total:", total)
 
