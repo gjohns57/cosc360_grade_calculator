@@ -10,12 +10,12 @@ def lab_grade(grades: pd.DataFrame):
     quiz = grades[(grades["Context"] == "Lab Quizzes") & (grades["Score"] != "-")]
 
     current = pd.to_numeric(df["Score"]).sum()
-    quiz_score = pd.to_numeric(quiz["Score"]).sum() / 10
+    quiz_score = pd.to_numeric(quiz["Score"]).sum()
     total = pd.to_numeric(df["Out Of"]).sum()
-    quiz_total = pd.to_numeric(quiz["Out Of"]).sum() / 10
+    quiz_total = pd.to_numeric(quiz["Out Of"]).sum()
     print("Programming Assignments:", current + quiz_score, "/", total + quiz_total, "=", (current + quiz_score) / (total + quiz_total))
 
-    return current / total
+    return (current + quiz_score) / (total + quiz_total)
 
 def exam_grade(grades: pd.DataFrame):
     exclude = {"Midterm Exam 1", "Midterm Exam 2", "Final Exam", "Final Exam Required"}
